@@ -79,7 +79,7 @@ class CodeScroller:
             "// Memento mori",
             "# Guess we're doing this now",
             "// I see you",
-            "// 💧 Cascade de Code 💧",
+            "//  Cascade de Code ",
             "// L'eau se souvient de chaque ligne de code",
             "// Ici, le temps s'écoule comme une boucle infinie",
             "// Chaque goutte est une variable qui s'évapore",
@@ -93,7 +93,7 @@ class CodeScroller:
         
             "// TODO: apprendre à nager avant de déboguer",
             "// Warning: cette cascade est plus stable que ton code",
-            "// Si ça crash, blame l'eau 💧",
+            "// Si ça crash, blame l'eau ",
             "/ 404: goutte introuvable",
             "// Ceci n'est pas un bug, c'est de l'art",
         
