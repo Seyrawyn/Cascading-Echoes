@@ -124,6 +124,12 @@ class Settings:
     show_startup_controls: bool = True
     screenshot_dir: str = "captures"
 
+    # Background mini-piece -----------------------------------------------
+    background_piece_enabled: bool = True
+    background_piece_width_fraction: float = 0.70
+    background_piece_height_fraction: float = 0.70
+    background_piece_cycle_seconds: float = 8.0
+
     # Misc -----------------------------------------------------------------
     default_seed: int = 7
     data_root: Path = field(default_factory=lambda: Path(__file__).resolve().parent)

@@ -11,6 +11,7 @@ from config import Settings
 from droplets import ReactiveDropletLayer
 from influence import InfluenceBuilder
 from palettes import get_palette, palette_names
+from right_panel import RightPanel
 from waterfall import WaterfallRenderer
 
 
@@ -40,10 +41,7 @@ def parse_args() -> argparse.Namespace:
 def create_screen(fullscreen: bool, windowed_size: tuple[int, int]) -> pygame.Surface:
     flags = pygame.FULLSCREEN if fullscreen else pygame.RESIZABLE
     size = pygame.display.get_desktop_sizes()[0] if fullscreen else windowed_size
-    try:
-        screen = pygame.display.set_mode(size, flags, vsync=1)
-    except TypeError:
-        screen = pygame.display.set_mode(size, flags)
+    screen = pygame.display.set_mode(size, flags)
     return screen
 
 
@@ -61,7 +59,15 @@ def build_scene(
     palette_name: str,
     text_palette_name: str,
     seed: int,
-) -> tuple[CodeScroller, InfluenceBuilder, WaterfallRenderer, ReactiveDropletLayer, pygame.Surface, pygame.Surface]:
+) -> tuple[
+    CodeScroller,
+    InfluenceBuilder,
+    WaterfallRenderer,
+    ReactiveDropletLayer,
+    pygame.Surface,
+    pygame.Surface,
+    RightPanel,
+]:
     render_size = settings.render_size(output_size)
     palette = get_palette(palette_name)
     text_palette = get_palette(text_palette_name)
@@ -78,7 +84,9 @@ def build_scene(
     droplets = ReactiveDropletLayer(settings, render_size, palette, seed=seed + 101)
     sim_surface = pygame.Surface(render_size).convert()
     scaled_surface = pygame.Surface(output_size).convert()
-    return scroller, influence, renderer, droplets, sim_surface, scaled_surface
+    right_panel = RightPanel(render_size[0], render_size[1], project_root=str(settings.data_root))
+    right_panel.set_palette(palette)
+    return scroller, influence, renderer, droplets, sim_surface, scaled_surface, right_panel
 
 
 def save_screenshot(screen: pygame.Surface, output_dir: Path) -> Path:
@@ -154,7 +162,7 @@ def main() -> None:
     initial_text_palette = args.text_palette or settings.palette_name
     text_palette_index = palette_order.index(initial_text_palette)
 
-    scroller, influence_builder, renderer, droplets, sim_surface, scaled_surface = build_scene(
+    scroller, influence_builder, renderer, droplets, sim_surface, scaled_surface, right_panel = build_scene(
         settings,
         screen.get_size(),
         samples_dir,
@@ -174,9 +182,9 @@ def main() -> None:
         print(message)
 
     def rebuild_scene(output_size: tuple[int, int]) -> None:
-        nonlocal scroller, influence_builder, renderer, droplets, sim_surface, scaled_surface
+        nonlocal scroller, influence_builder, renderer, droplets, sim_surface, scaled_surface, right_panel
         current_foam = droplets.foam_opacity
-        scroller, influence_builder, renderer, droplets, sim_surface, scaled_surface = build_scene(
+        scroller, influence_builder, renderer, droplets, sim_surface, scaled_surface, right_panel = build_scene(
             settings,
             output_size,
             samples_dir,
@@ -218,7 +226,7 @@ def main() -> None:
             elif event.type == pygame.VIDEORESIZE and not fullscreen:
                 windowed_size = (event.w, event.h)
                 screen = create_screen(False, windowed_size)
-                rebuild_scene(screen.get_size())
+                scaled_surface = pygame.Surface(screen.get_size()).convert()
                 set_status(f"Resized to {event.w}×{event.h}")
 
             elif event.type == pygame.KEYDOWN:
@@ -246,6 +254,7 @@ def main() -> None:
                     palette = get_palette(palette_name)
                     renderer.set_palette(palette)
                     droplets.set_palette(palette)
+                    right_panel.set_palette(palette)
                     set_status(f"Visual palette: {palette_name} ({palette_index + 1}/{len(palette_order)})")
                 elif event.key == pygame.K_t:
                     direction = -1 if (event.mod & pygame.KMOD_SHIFT) else 1
@@ -279,7 +288,7 @@ def main() -> None:
                     fullscreen = not fullscreen
                     screen = create_screen(fullscreen, windowed_size)
                     pygame.mouse.set_visible(not fullscreen)
-                    rebuild_scene(screen.get_size())
+                    scaled_surface = pygame.Surface(screen.get_size()).convert()
                     set_status("Fullscreen on" if fullscreen else "Fullscreen off")
 
         if not paused:
@@ -296,6 +305,17 @@ def main() -> None:
         else:
             frame = renderer.render_text_layer(influence, time_accumulator)
         pygame.surfarray.blit_array(sim_surface, frame.swapaxes(0, 1))
+
+        # Subtle background piece from RightPanel, controlled via config
+        if settings.background_piece_enabled:
+            right_panel.draw_background_grid(
+                sim_surface,
+                time_accumulator,
+                alpha=80,
+                width_fraction=settings.background_piece_width_fraction,
+                height_fraction=settings.background_piece_height_fraction,
+                cycle_seconds=settings.background_piece_cycle_seconds,
+            )
 
         if settings.enable_droplets:
             droplets.draw(sim_surface)
