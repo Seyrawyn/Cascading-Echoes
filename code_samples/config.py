@@ -81,7 +81,7 @@ class Settings:
 
     # Reactive droplet layer ----------------------------------------------
     enable_droplets: bool = True
-    show_background: bool = False
+    show_background: bool = True
 
     droplet_max_count: int = 720
     droplet_spawn_rate: float = 260.0  # droplets / second
