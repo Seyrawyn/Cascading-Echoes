@@ -110,7 +110,7 @@ def print_controls() -> None:
     print("  D           toggle droplets")
     print("  F           toggle fullscreen")
     print("  L           reload the samples directory")
-    print("  M           toggle animation")
+    print("  M           toggle animation background")
     print("  S           save a screenshot")
 
 

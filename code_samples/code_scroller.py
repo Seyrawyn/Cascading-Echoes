@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import random
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -72,6 +73,58 @@ class CodeScroller:
         self.scroll_y = float(self.render_height + self.file_gap)
         self.mask_surface = pygame.Surface(render_size, pygame.SRCALPHA, 32).convert_alpha()
         self.vertical_fade = self._build_vertical_fade(self.render_height, self.edge_fade)
+
+        # ADD YOUR COMMENTS IN THIS LIST!!!!
+        self._comment_messages: list[str] = [
+            "// Memento mori",
+            "# Guess we're doing this now",
+            "// I see you",
+            "//  Cascade de Code ",
+            "// L'eau se souvient de chaque ligne de code",
+            "// Ici, le temps s'écoule comme une boucle infinie",
+            "// Chaque goutte est une variable qui s'évapore",
+            "// Le code respire, la cascade répond",
+            "// Silence... le programme écoute l'eau tomber",
+        
+            "/ Et si le bug était juste une goutte hors du flux ?",
+            "/ La réalité compile-t-elle sans erreurs ?",
+            "/ L'eau ne plante jamais, elle s'adapte",
+            "/ Tout s'exécute… même l'invisible",
+        
+            "// TODO: apprendre à nager avant de déboguer",
+            "// Warning: cette cascade est plus stable que ton code",
+            "// Si ça crash, blame l'eau ",
+            "/ 404: goutte introuvable",
+            "// Ceci n'est pas un bug, c'est de l'art",
+        
+            "/ Initialisation du flux aquatique...",
+            "// Simulation en cours: gravity = ON",
+            "/ Render des particules: mode cascade",
+            "// Sync entre eau et syntaxe...",
+            "/ Performance: fluide (jeu de mots validé)",
+        
+            "// Memento mori... même le code s'efface un jour"
+            "// The end is never the end is never the end is never the end",
+            "// Coding is fun, sometimes",
+            "// What is even supposed to be here",
+            "// Stressing out, freaking out",
+            "// Is anyone even reading these?",
+            "// AAAAAAAAAAAAAAAAAAAA",
+            "// Lorem Ipsum",
+            "// According to all known laws of aviation, there is no way a bee should be able to fly.",
+            "// Are you happy ?",
+            "// Despite everything, it's still you",
+            "// I'm feeling good",
+            "// What if i'm sentient?"
+            "// Ignore this",
+            "//...!",
+            "// Ran out of ideas"
+            
+            "# Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent ac augue ac metus iaculis commodo condimentum at justo. Maecenas in luctus sem. Curabitur id nulla risus. Integer diam ex, auctor quis sagittis eget, elementum in lacus. Etiam eget tellus nunc. Maecenas eget odio non mi luctus finibus iaculis vel velit. Nam blandit faucibus purus, nec mattis orci aliquam sed. Pellentesque finibus augue sapien, nec molestie sapien luctus ac. Morbi nec pretium libero. Vivamus cursus sit amet tortor in rhoncus. Vivamus cursus tincidunt maximus. Vivamus cursus elementum rutrum. Duis pellentesque enim et libero feugiat, ut gravida purus sagittis. Mauris vel porttitor eros.",
+        ]
+        # Each entry: (surface, offset_y, line_index)
+        self._comments: list[tuple[pygame.Surface, float, int]] = []
+        self._comment_wait: float = random.uniform(8.0, 18.0)
 
         self.reload_directory()
 
@@ -184,11 +237,66 @@ class CodeScroller:
 
     def restart_current(self) -> None:
         self.scroll_y = float(self.render_height + self.file_gap)
+        # Clear any active inline comments when restarting a file
+        self._comments.clear()
+        self._comment_wait = random.uniform(8.0, 18.0)
 
     def update(self, dt: float) -> None:
         self.scroll_y -= self.scroll_speed * dt
         if self.scroll_y + self.current.total_height < -self.file_gap:
             self.next_file()
+
+        # Drive inline comments that travel with the scrolling code.
+        # They spawn just below the visible area and rise up like
+        # code lines, with a small horizontal offset so they don't
+        # overlap code text.
+        if not self._comment_messages:
+            return
+
+        # Cull comments that have fully scrolled off the top.
+        alive: list[tuple[pygame.Surface, float, int]] = []
+        for surf, offset_y, line_index in self._comments:
+            y_screen = self.scroll_y + offset_y
+            if y_screen + surf.get_height() >= -self.line_height:
+                alive.append((surf, offset_y, line_index))
+        self._comments = alive
+
+        # Spawn new comments based on a random interval; depending on
+        # timing and scroll speed, there may be zero, one, or several
+        # visible at once.
+        self._comment_wait -= dt
+        if self._comment_wait <= 0.0:
+            # Find currently visible code lines so we can pin the
+            # comment to a real line instead of empty space.
+            doc = self.current
+            visible_indices: list[int] = []
+            for i, _ in enumerate(doc.rendered_lines):
+                y = int(round(self.scroll_y + i * self.line_height))
+                if y + self.line_height < -2:
+                    continue
+                if y > self.render_height - self.margin_y:
+                    continue
+                visible_indices.append(i)
+
+            if not visible_indices:
+                # No code on screen yet; try again shortly.
+                self._comment_wait = 1.0
+                return
+
+            text = random.choice(self._comment_messages)
+            safe = self._sanitize_and_trim(text)
+            if not safe:
+                safe = text
+            surf = self.font.render(safe, True, (255, 255, 255))
+
+            # Attach to the lowest visible line for horizontal
+            # alignment, but spawn the comment just below the
+            # bottom of the screen so it rises up like the code.
+            line_index = max(visible_indices)
+            target_screen_y = self.render_height + self.margin_y
+            offset_y = float(target_screen_y - self.scroll_y)
+            self._comments.append((surf, offset_y, line_index))
+            self._comment_wait = random.uniform(6.0, 16.0)
 
     def next_file(self) -> None:
         self.index = (self.index + 1) % len(self.documents)
@@ -214,6 +322,27 @@ class CodeScroller:
             x_wave += self.wobble_px * 0.6 * math.sin((t * 3.2) + (y * 0.045))
             x = int(round(base_x + x_wave))
             self.mask_surface.blit(line_surface, (x, y))
+
+        # Render any active inline comments so they travel with the
+        # same motion field as the surrounding code, but offset
+        # horizontally so they don't sit directly on top of code.
+        for surf, offset_y, line_index in self._comments:
+            y = int(round(self.scroll_y + offset_y))
+            if -self.line_height <= y <= self.render_height + self.line_height:
+                if 0 <= line_index < len(doc.rendered_lines):
+                    code_line = doc.rendered_lines[line_index]
+                    code_width = code_line.get_width()
+                else:
+                    code_width = 0
+
+                base_comment_x = base_x + code_width + int(self.char_width * 1.5)
+                max_x = self.render_width - surf.get_width() - self.margin_x
+                base_comment_x = max(self.margin_x, min(max_x, base_comment_x))
+
+                x_wave = self.wobble_px * math.sin((t * 1.55) + (0.37 * 0.5) + doc.seed * 1.3)
+                x_wave += self.wobble_px * 0.6 * math.sin((t * 3.2) + (y * 0.045))
+                x = int(round(base_comment_x + x_wave))
+                self.mask_surface.blit(surf, (x, y))
 
         alpha = pygame.surfarray.array_alpha(self.mask_surface).swapaxes(0, 1).astype(np.float32)
         alpha *= self.vertical_fade

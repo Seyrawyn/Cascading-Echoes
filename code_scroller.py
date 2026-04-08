@@ -119,6 +119,8 @@ class CodeScroller:
             "// Ignore this",
             "//...!",
             "// Ran out of ideas"
+            
+            "# Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent ac augue ac metus iaculis commodo condimentum at justo. Maecenas in luctus sem. Curabitur id nulla risus. Integer diam ex, auctor quis sagittis eget, elementum in lacus. Etiam eget tellus nunc. Maecenas eget odio non mi luctus finibus iaculis vel velit. Nam blandit faucibus purus, nec mattis orci aliquam sed. Pellentesque finibus augue sapien, nec molestie sapien luctus ac. Morbi nec pretium libero. Vivamus cursus sit amet tortor in rhoncus. Vivamus cursus tincidunt maximus. Vivamus cursus elementum rutrum. Duis pellentesque enim et libero feugiat, ut gravida purus sagittis. Mauris vel porttitor eros.",
         ]
         # Each entry: (surface, offset_y, line_index)
         self._comments: list[tuple[pygame.Surface, float, int]] = []
