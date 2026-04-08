@@ -266,6 +266,10 @@ def main() -> None:
                     background_enabled = not background_enabled
                     label = "Background on" if background_enabled else "Background off — code stays visible"
                     set_status(label)
+                elif event.key == pygame.K_m:
+                    settings.background_piece_enabled = not settings.background_piece_enabled
+                    label = "Background pieces: on" if settings.background_piece_enabled else "Background pieces: off"
+                    set_status(label)
                 elif event.key in (pygame.K_LEFTBRACKET, pygame.K_MINUS):
                     value = droplets.adjust_foam_opacity(-settings.foam_opacity_step)
                     set_status(f"Foam opacity: {int(round(value * 100))}%")
