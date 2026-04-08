@@ -108,6 +108,16 @@ class CodeScroller:
             "// Coding is fun, sometimes",
             "// What is even supposed to be here",
             "// Stressing out, freaking out",
+            "// Is anyone even reading these?",
+            "// AAAAAAAAAAAAAAAAAAAA",
+            "// Lorem Ipsum",
+            "// According to all known laws of aviation, there is no way a bee should be able to fly.",
+            "// Are you happy ?",
+            "// Despite everything, it's still you",
+            "// I'm feeling good",
+            "// What if i'm sentient?"
+            "// Ignore this",
+            "//...!",
             "// Ran out of ideas"
         ]
         # Each entry: (surface, offset_y, line_index)
